@@ -8,18 +8,36 @@ mod repository;
 mod routes;
 
 use std::error::Error;
+use std::sync::Arc;
 
-use sqlx::mysql::MySqlPool;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tracing_subscriber::EnvFilter;
 
 use crate::config::Config;
+use crate::repository::MySqlCustomerRepository;
 
 /// Shared state handed to every handler.
-#[derive(Clone)]
-pub struct AppState {
-    pub pool: MySqlPool,
+#[derive(Debug)]
+pub struct AppState<R> {
+    pub repo: Arc<R>,
+}
+
+impl<R> AppState<R> {
+    pub fn new(repo: R) -> Self {
+        Self {
+            repo: Arc::new(repo),
+        }
+    }
+}
+
+// Derived `Clone` would demand `R: Clone`, which the `Arc` already spares us.
+impl<R> Clone for AppState<R> {
+    fn clone(&self) -> Self {
+        Self {
+            repo: Arc::clone(&self.repo),
+        }
+    }
 }
 
 #[tokio::main]
@@ -38,7 +56,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     db::run_migrations(&pool).await?;
     tracing::info!("connected to MySQL and applied pending migrations");
 
-    let app = routes::router(AppState { pool });
+    let app = routes::router(AppState::new(MySqlCustomerRepository::new(pool)));
 
     let listener = TcpListener::bind(config.server_addr).await?;
     let addr = listener.local_addr()?;

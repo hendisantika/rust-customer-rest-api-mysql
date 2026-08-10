@@ -7,7 +7,7 @@ use validator::Validate;
 use crate::AppState;
 use crate::error::{AppError, ErrorResponse};
 use crate::models::{CreateCustomer, Customer, CustomerPage, ListCustomersQuery, UpdateCustomer};
-use crate::repository;
+use crate::repository::CustomerRepository;
 
 /// Liveness probe.
 #[utoipa::path(
@@ -36,12 +36,12 @@ pub async fn health() -> Json<serde_json::Value> {
         (status = 500, description = "Unexpected error", body = ErrorResponse)
     )
 )]
-pub async fn create_customer(
-    State(state): State<AppState>,
+pub async fn create_customer<R: CustomerRepository>(
+    State(state): State<AppState<R>>,
     Json(payload): Json<CreateCustomer>,
 ) -> Result<(StatusCode, Json<Customer>), AppError> {
     payload.validate()?;
-    let customer = repository::create(&state.pool, &payload).await?;
+    let customer = state.repo.create(&payload).await?;
     Ok((StatusCode::CREATED, Json(customer)))
 }
 
@@ -57,12 +57,12 @@ pub async fn create_customer(
         (status = 500, description = "Unexpected error", body = ErrorResponse)
     )
 )]
-pub async fn list_customers(
-    State(state): State<AppState>,
+pub async fn list_customers<R: CustomerRepository>(
+    State(state): State<AppState<R>>,
     Query(query): Query<ListCustomersQuery>,
 ) -> Result<Json<CustomerPage>, AppError> {
     query.validate()?;
-    let page = repository::list(&state.pool, &query).await?;
+    let page = state.repo.list(&query).await?;
     Ok(Json(page))
 }
 
@@ -78,11 +78,11 @@ pub async fn list_customers(
         (status = 500, description = "Unexpected error", body = ErrorResponse)
     )
 )]
-pub async fn get_customer(
-    State(state): State<AppState>,
+pub async fn get_customer<R: CustomerRepository>(
+    State(state): State<AppState<R>>,
     Path(id): Path<u64>,
 ) -> Result<Json<Customer>, AppError> {
-    let customer = repository::find_by_id(&state.pool, id).await?;
+    let customer = state.repo.find_by_id(id).await?;
     Ok(Json(customer))
 }
 
@@ -101,13 +101,13 @@ pub async fn get_customer(
         (status = 500, description = "Unexpected error", body = ErrorResponse)
     )
 )]
-pub async fn update_customer(
-    State(state): State<AppState>,
+pub async fn update_customer<R: CustomerRepository>(
+    State(state): State<AppState<R>>,
     Path(id): Path<u64>,
     Json(payload): Json<UpdateCustomer>,
 ) -> Result<Json<Customer>, AppError> {
     payload.validate()?;
-    let customer = repository::update(&state.pool, id, &payload).await?;
+    let customer = state.repo.update(id, &payload).await?;
     Ok(Json(customer))
 }
 
@@ -123,10 +123,10 @@ pub async fn update_customer(
         (status = 500, description = "Unexpected error", body = ErrorResponse)
     )
 )]
-pub async fn delete_customer(
-    State(state): State<AppState>,
+pub async fn delete_customer<R: CustomerRepository>(
+    State(state): State<AppState<R>>,
     Path(id): Path<u64>,
 ) -> Result<StatusCode, AppError> {
-    repository::delete(&state.pool, id).await?;
+    state.repo.delete(id).await?;
     Ok(StatusCode::NO_CONTENT)
 }

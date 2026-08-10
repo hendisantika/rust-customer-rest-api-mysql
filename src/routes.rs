@@ -8,6 +8,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::AppState;
 use crate::handlers;
 use crate::openapi::ApiDoc;
+use crate::repository::CustomerRepository;
 
 /// Where the generated OpenAPI 3 document is served from.
 pub const OPENAPI_PATH: &str = "/api-docs/openapi.json";
@@ -15,7 +16,7 @@ pub const OPENAPI_PATH: &str = "/api-docs/openapi.json";
 /// Where Swagger UI is mounted.
 pub const SWAGGER_UI_PATH: &str = "/swagger-ui";
 
-pub fn router(state: AppState) -> Router {
+pub fn router<R: CustomerRepository>(state: AppState<R>) -> Router {
     let customers = Router::new()
         .route(
             "/customers",
