@@ -32,9 +32,9 @@ RUN apt-get update \
 COPY --from=builder /app/target/release/rust-customer-rest-api-mysql /usr/local/bin/customer-api
 
 USER app
-EXPOSE 8080
+EXPOSE 8088
 
-ENV SERVER_ADDR=0.0.0.0:8080 \
+ENV SERVER_ADDR=0.0.0.0:8088 \
     RUST_LOG=info
 
 ENTRYPOINT ["/usr/local/bin/customer-api"]

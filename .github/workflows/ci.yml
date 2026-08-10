@@ -168,7 +168,7 @@ jobs:
           IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/rust-customer-rest-api-mysql
           TAG: ${{ github.run_number }}
           CONTAINER: customer-api-dev
-          APP_PORT: ${{ vars.DEV_APP_PORT || '8080' }}
+          APP_PORT: ${{ vars.DEV_APP_PORT || '8088' }}
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_NAME: ${{ secrets.DB_NAME }}
@@ -202,7 +202,7 @@ jobs:
             docker run -d \
               --name "${CONTAINER}" \
               --restart unless-stopped \
-              -p "${APP_PORT}:8080" \
+              -p "${APP_PORT}:8088" \
               -e "DATABASE_URL=mysql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" \
               -e RUST_LOG=info \
               "${IMAGE}:${TAG}"

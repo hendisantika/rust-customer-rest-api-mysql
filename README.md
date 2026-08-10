@@ -103,7 +103,7 @@ Every push to `main` that passes CI publishes an image to Docker Hub, tagged
 with the GitHub Actions run number and with `latest`:
 
 ```bash
-docker run --rm -p 8080:8080 \
+docker run --rm -p 8088:8088 \
   -e DATABASE_URL='mysql://customer:secret@host.docker.internal:3306/customer_db' \
   hendisantika/rust-customer-rest-api-mysql:latest
 ```
@@ -148,7 +148,7 @@ notice while `SSH_PRIVATE_KEY` is unset:
 | Variable        | Default  | Purpose                                  |
 |-----------------|----------|------------------------------------------|
 | `DEV_APP_URL`   | —        | Shown as the environment URL in GitHub   |
-| `DEV_APP_PORT`  | `8080`   | Host port published by the container     |
+| `DEV_APP_PORT`  | `8088`   | Host port published by the container     |
 
 ## Behind nginx
 
