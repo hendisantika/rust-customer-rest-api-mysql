@@ -33,3 +33,4 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 [dev-dependencies]
 tower = { version = "0.5.3", features = ["util"] }
+tokio = { version = "1.53.1", features = ["sync"] }
