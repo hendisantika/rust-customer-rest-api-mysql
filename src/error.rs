@@ -2,6 +2,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
+use utoipa::ToSchema;
 use validator::ValidationErrors;
 
 /// Every failure that can be turned into an HTTP response.
@@ -21,11 +22,16 @@ pub enum AppError {
 }
 
 /// Problem payload returned for every non-2xx response.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ErrorResponse {
+    #[schema(example = 404)]
     pub status: u16,
+    #[schema(example = "Not Found")]
     pub error: String,
+    #[schema(example = "customer 42 was not found")]
     pub message: String,
+    /// Field level details, present for validation failures.
+    #[schema(value_type = Option<Object>)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<serde_json::Value>,
 }

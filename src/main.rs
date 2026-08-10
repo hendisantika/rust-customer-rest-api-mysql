@@ -3,6 +3,7 @@ mod db;
 mod error;
 mod handlers;
 mod models;
+mod openapi;
 mod repository;
 mod routes;
 
@@ -40,7 +41,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let app = routes::router(AppState { pool });
 
     let listener = TcpListener::bind(config.server_addr).await?;
-    tracing::info!("listening on http://{}", listener.local_addr()?);
+    let addr = listener.local_addr()?;
+    tracing::info!("listening on http://{addr}");
+    tracing::info!("swagger ui on http://{addr}{}", routes::SWAGGER_UI_PATH);
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
