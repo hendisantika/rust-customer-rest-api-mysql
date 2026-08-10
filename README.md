@@ -97,6 +97,31 @@ validation failures.
 { "status": 404, "error": "Not Found", "message": "customer 42 was not found" }
 ```
 
+## Docker image
+
+Every push to `main` that passes CI publishes an image to Docker Hub, tagged
+with the GitHub Actions run number and with `latest`:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e DATABASE_URL='mysql://customer:secret@host.docker.internal:3306/customer_db' \
+  hendisantika/rust-customer-rest-api-mysql:latest
+```
+
+The publish job needs two repository secrets, and skips itself with a notice
+until both are set:
+
+| Secret                | Value                                        |
+|-----------------------|----------------------------------------------|
+| `DOCKERHUB_USERNAME`  | Your Docker Hub account name                  |
+| `DOCKERHUB_TOKEN`     | A Docker Hub access token with write access   |
+
+To build it locally:
+
+```bash
+docker build -t rust-customer-rest-api-mysql:local .
+```
+
 ## Project layout
 
 ```
@@ -114,6 +139,8 @@ src/
 └── test_support.rs # in-memory repository used by the tests
 migrations/         # sqlx migrations, applied on start-up
 tests/              # integration tests against a real MySQL
+Dockerfile          # multi-stage build of the release image
+.github/workflows/  # CI: format, clippy, tests, Docker Hub publish
 ```
 
 ## Tests
