@@ -122,6 +122,34 @@ To build it locally:
 docker build -t rust-customer-rest-api-mysql:local .
 ```
 
+## Deployment
+
+Every push to `main` that passes CI and publishes an image also rolls it out
+to the **dev** environment over SSH: the host pulls the freshly tagged image,
+replaces the `customer-api-dev` container and waits for `/health` to answer
+before the job is allowed to succeed. The app applies its own migrations on
+start-up, so no separate migration step is needed.
+
+The job is driven entirely by repository secrets, and skips itself with a
+notice while `SSH_PRIVATE_KEY` is unset:
+
+| Secret           | Purpose                                       |
+|------------------|-----------------------------------------------|
+| `SSH_HOST`       | Dev host                                      |
+| `SSH_PORT`       | SSH port                                      |
+| `SSH_USERNAME`   | SSH user, must be able to run `docker`        |
+| `SSH_PRIVATE_KEY`| Private key for that user (no passphrase)     |
+| `DB_HOST`        | MySQL host reachable from the dev container   |
+| `DB_PORT`        | MySQL port                                    |
+| `DB_NAME`        | Database name                                 |
+| `DB_USERNAME`    | Database user                                 |
+| `DB_PASSWORD`    | Database password                             |
+
+| Variable        | Default  | Purpose                                  |
+|-----------------|----------|------------------------------------------|
+| `DEV_APP_URL`   | —        | Shown as the environment URL in GitHub   |
+| `DEV_APP_PORT`  | `8080`   | Host port published by the container     |
+
 ## Project layout
 
 ```
