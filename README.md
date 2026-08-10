@@ -150,6 +150,23 @@ notice while `SSH_PRIVATE_KEY` is unset:
 | `DEV_APP_URL`   | —        | Shown as the environment URL in GitHub   |
 | `DEV_APP_PORT`  | `8080`   | Host port published by the container     |
 
+## Behind nginx
+
+`nginx/rust-customer.conf` mounts the API under `/customer/` on an existing
+server block, leaving whatever else that block serves untouched. Install it as
+a snippet and include it inside the `server { ... }` you want it on:
+
+```bash
+sudo install -m 644 nginx/rust-customer.conf /etc/nginx/snippets/rust-customer.conf
+# inside the existing server block:  include /etc/nginx/snippets/rust-customer.conf;
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Then the API answers at `http://<host>:<port>/customer/`, with Swagger UI at
+`/customer/swagger-ui/`. The snippet rewrites the redirect from
+`/swagger-ui` and the absolute document URL Swagger UI hardcodes, so nothing
+escapes the prefix and no path outside `/customer/` is claimed.
+
 ## Project layout
 
 ```
@@ -168,6 +185,7 @@ src/
 migrations/         # sqlx migrations, applied on start-up
 tests/              # integration tests against a real MySQL
 Dockerfile          # multi-stage build of the release image
+nginx/              # reverse proxy snippet for /customer/
 .github/workflows/  # CI: format, clippy, tests, Docker Hub publish
 ```
 
