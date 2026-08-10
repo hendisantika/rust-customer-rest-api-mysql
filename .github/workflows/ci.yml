@@ -86,7 +86,7 @@ jobs:
       pushed: ${{ steps.credentials.outputs.available }}
 
     env:
-      IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/rust-customer-rest-api-mysql
+      IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/customer-api-dev
 
     steps:
       - uses: actions/checkout@v7
@@ -165,7 +165,7 @@ jobs:
         if: steps.credentials.outputs.available == 'true'
         uses: appleboy/ssh-action@v1.2.5
         env:
-          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/rust-customer-rest-api-mysql
+          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/customer-api-dev
           TAG: ${{ github.run_number }}
           CONTAINER: customer-api-dev
           APP_PORT: ${{ vars.DEV_APP_PORT || '8088' }}

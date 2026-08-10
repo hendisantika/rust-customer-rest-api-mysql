@@ -105,7 +105,7 @@ with the GitHub Actions run number and with `latest`:
 ```bash
 docker run --rm -p 8088:8088 \
   -e DATABASE_URL='mysql://customer:secret@host.docker.internal:3306/customer_db' \
-  hendisantika/rust-customer-rest-api-mysql:latest
+  hendisantika/customer-api-dev:latest
 ```
 
 The publish job needs two repository secrets, and skips itself with a notice
