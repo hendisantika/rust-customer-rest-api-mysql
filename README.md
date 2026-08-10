@@ -105,10 +105,23 @@ src/
 ├── config.rs       # environment configuration
 ├── db.rs           # MySQL pool and migration runner
 ├── models.rs       # request, response and row types plus validation rules
-├── repository.rs   # SQL statements
+├── repository.rs   # CustomerRepository trait and its MySQL implementation
 ├── handlers.rs     # HTTP handlers and their OpenAPI annotations
 ├── openapi.rs      # OpenAPI 3 document
 ├── routes.rs       # router, middleware and Swagger UI mount
-└── error.rs        # error type and its HTTP representation
+├── error.rs        # error type and its HTTP representation
+└── test_support.rs # in-memory repository used by the tests
 migrations/         # sqlx migrations, applied on start-up
 ```
+
+## Tests
+
+```bash
+cargo test
+```
+
+The handler tests drive the real router with an in-memory
+`CustomerRepository`, so they need no database and no running server. They
+cover the status codes and payloads of every endpoint, including validation
+failures, duplicate emails, missing customers and the generic 500 returned
+when the repository fails.
