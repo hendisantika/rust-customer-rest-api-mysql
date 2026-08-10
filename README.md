@@ -162,10 +162,29 @@ sudo install -m 644 nginx/rust-customer.conf /etc/nginx/snippets/rust-customer.c
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
+It is a snippet — a bare list of `location` blocks — so it has to be included
+from inside a `server { ... }`. Copying it straight into `sites-enabled/`
+puts those directives at `http` level and nginx refuses to start:
+
+```
+[emerg] "location" directive is not allowed here
+```
+
+If there is no server block to attach it to, install
+`nginx/rust-customer-site.conf` into `sites-available/` instead; it is a
+server block that includes the snippet.
+
 Then the API answers at `http://<host>:<port>/customer/`, with Swagger UI at
-`/customer/swagger-ui/`. The snippet rewrites the redirect from
-`/swagger-ui` and the absolute document URL Swagger UI hardcodes, so nothing
-escapes the prefix and no path outside `/customer/` is claimed.
+`/customer/swagger-ui/`. Three rewrites keep everything inside the prefix, so
+no path outside `/customer/` is claimed:
+
+- the `/swagger-ui` → `/swagger-ui/` redirect the app returns,
+- the absolute document URL Swagger UI hardcodes,
+- the `servers` entry in the OpenAPI document, which is `/` and would
+  otherwise send Swagger UI's **Try it out** calls to `/api/v1/customers`.
+
+Requires `ngx_http_sub_module` for the rewrites (Debian/Ubuntu: in
+`nginx-full`, not in `nginx-light`).
 
 ## Project layout
 
@@ -185,7 +204,7 @@ src/
 migrations/         # sqlx migrations, applied on start-up
 tests/              # integration tests against a real MySQL
 Dockerfile          # multi-stage build of the release image
-nginx/              # reverse proxy snippet for /customer/
+nginx/              # reverse proxy snippet for /customer/, plus a standalone site
 .github/workflows/  # CI: format, clippy, tests, Docker Hub publish
 ```
 
