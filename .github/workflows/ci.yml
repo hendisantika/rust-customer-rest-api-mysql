@@ -72,3 +72,64 @@ jobs:
 
       - name: Unit and integration tests
         run: cargo test --all-targets --locked
+
+  docker:
+    name: Publish to Docker Hub
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+
+    env:
+      IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/rust-customer-rest-api-mysql
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check Docker Hub credentials
+        id: credentials
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping the Docker Hub push: add the DOCKERHUB_USERNAME and DOCKERHUB_TOKEN secrets to enable it."
+          fi
+
+      - name: Set up Buildx
+        if: steps.credentials.outputs.available == 'true'
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        if: steps.credentials.outputs.available == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        if: steps.credentials.outputs.available == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          # The run number is the image version; `latest` follows main.
+          tags: |
+            ${{ env.IMAGE }}:${{ github.run_number }}
+            ${{ env.IMAGE }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ github.run_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summary
+        if: steps.credentials.outputs.available == 'true'
+        run: |
+          echo "Pushed \`${IMAGE}:${{ github.run_number }}\` and \`${IMAGE}:latest\`" >> "$GITHUB_STEP_SUMMARY"
