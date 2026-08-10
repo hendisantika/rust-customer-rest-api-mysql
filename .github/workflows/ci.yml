@@ -180,7 +180,6 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: IMAGE,TAG,CONTAINER,APP_PORT,DB_HOST,DB_PORT,DB_NAME,DB_USERNAME,DB_PASSWORD
-          script_stops: true
           script: |
             set -eu
 
