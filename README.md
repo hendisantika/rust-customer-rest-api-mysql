@@ -1,7 +1,7 @@
 # rust-customer-rest-api-mysql
 
 Customer CRUD REST API written in Rust with [axum](https://github.com/tokio-rs/axum)
-and [sqlx](https://github.com/launchbadge/sqlx), backed by **MySQL 9.7.0** and
+and [sqlx](https://github.com/launchbadge/sqlx), backed by **MySQL 26.7.0** and
 documented with **OpenAPI 3** through Swagger UI.
 
 ## Stack
@@ -9,7 +9,7 @@ documented with **OpenAPI 3** through Swagger UI.
 | Concern       | Choice                              |
 |---------------|-------------------------------------|
 | HTTP          | axum 0.8 + tower-http (trace, CORS) |
-| Database      | MySQL 9.7.0 via sqlx 0.9            |
+| Database      | MySQL 26.7.0 via sqlx 0.9           |
 | Migrations    | sqlx, embedded from `./migrations`  |
 | Validation    | validator 0.21                      |
 | Documentation | utoipa 5 + Swagger UI               |
@@ -18,7 +18,7 @@ documented with **OpenAPI 3** through Swagger UI.
 
 ```bash
 cp .env.example .env       # adjust credentials if needed
-docker compose up -d       # starts MySQL 9.7.0
+docker compose up -d       # starts MySQL 26.7.0
 cargo run                  # applies migrations, then serves the API
 ```
 

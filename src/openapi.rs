@@ -10,7 +10,7 @@ use crate::models::{CreateCustomer, Customer, CustomerPage, UpdateCustomer};
     info(
         title = "Customer REST API",
         version = "0.1.0",
-        description = "CRUD REST API for customers, backed by MySQL 9.7.0.",
+        description = "CRUD REST API for customers, backed by MySQL 26.7.0.",
         license(name = "MIT")
     ),
     servers((url = "/", description = "This server")),
