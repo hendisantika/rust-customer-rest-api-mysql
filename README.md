@@ -22,13 +22,13 @@ docker compose up -d       # starts MySQL 26.7.0
 cargo run                  # applies migrations, then serves the API
 ```
 
-The API listens on `SERVER_ADDR` (default `0.0.0.0:8080`).
+The API listens on `SERVER_ADDR` (default `0.0.0.0:8088`).
 
 | URL                                              | What it is           |
 |--------------------------------------------------|----------------------|
-| <http://localhost:8080/swagger-ui>               | Swagger UI           |
-| <http://localhost:8080/api-docs/openapi.json>    | OpenAPI 3 document   |
-| <http://localhost:8080/health>                   | Liveness probe       |
+| <http://localhost:8088/swagger-ui>               | Swagger UI           |
+| <http://localhost:8088/api-docs/openapi.json>    | OpenAPI 3 document   |
+| <http://localhost:8088/health>                   | Liveness probe       |
 
 ## Configuration
 
@@ -36,7 +36,7 @@ The API listens on `SERVER_ADDR` (default `0.0.0.0:8080`).
 |----------------------------|--------------------------------------------------------|--------------------------------------|
 | `DATABASE_URL`             | —  (required)                                          | MySQL connection string              |
 | `DATABASE_MAX_CONNECTIONS` | `10`                                                   | Connection pool size                 |
-| `SERVER_ADDR`              | `0.0.0.0:8080`                                         | Listen address                       |
+| `SERVER_ADDR`              | `0.0.0.0:8088`                                         | Listen address                       |
 | `RUST_LOG`                 | `info`                                                 | Tracing filter                       |
 | `MYSQL_*`                  | see `.env.example`                                     | Credentials used by docker-compose   |
 
@@ -55,19 +55,19 @@ The API listens on `SERVER_ADDR` (default `0.0.0.0:8080`).
 
 ```bash
 # create
-curl -X POST http://localhost:8080/api/v1/customers \
+curl -X POST http://localhost:8088/api/v1/customers \
   -H 'content-type: application/json' \
   -d '{"name":"Hendi Santika","email":"hendisantika@yahoo.co.id","phone":"+6281234567890","address":"Bandung"}'
 
 # list, page 1, filtered by name or email
-curl 'http://localhost:8080/api/v1/customers?page=1&per_page=20&q=hendi'
+curl 'http://localhost:8088/api/v1/customers?page=1&per_page=20&q=hendi'
 
 # read / replace / delete
-curl http://localhost:8080/api/v1/customers/1
-curl -X PUT http://localhost:8080/api/v1/customers/1 \
+curl http://localhost:8088/api/v1/customers/1
+curl -X PUT http://localhost:8088/api/v1/customers/1 \
   -H 'content-type: application/json' \
   -d '{"name":"Hendi S.","email":"hendisantika@yahoo.co.id","phone":null,"address":"Jakarta"}'
-curl -X DELETE http://localhost:8080/api/v1/customers/1
+curl -X DELETE http://localhost:8088/api/v1/customers/1
 ```
 
 A list response carries its pagination metadata:
@@ -152,39 +152,40 @@ notice while `SSH_PRIVATE_KEY` is unset:
 
 ## Behind nginx
 
-`nginx/rust-customer.conf` mounts the API under `/customer/` on an existing
-server block, leaving whatever else that block serves untouched. Install it as
-a snippet and include it inside the `server { ... }` you want it on:
+`nginx/rust-customer.conf` serves the API on its own hostname, proxying to the
+container's published port:
 
 ```bash
-sudo install -m 644 nginx/rust-customer.conf /etc/nginx/snippets/rust-customer.conf
-# inside the existing server block:  include /etc/nginx/snippets/rust-customer.conf;
+sudo install -m 644 nginx/rust-customer.conf /etc/nginx/sites-available/rust-customer.conf
+sudo ln -sf /etc/nginx/sites-available/rust-customer.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-It is a snippet — a bare list of `location` blocks — so it has to be included
-from inside a `server { ... }`. Copying it straight into `sites-enabled/`
-puts those directives at `http` level and nginx refuses to start:
+Check it from the host itself, bypassing DNS:
 
+```bash
+curl -s -H 'Host: rust-api.jvm.my.id' http://127.0.0.1/health
+curl -sI -H 'Host: rust-api.jvm.my.id' http://127.0.0.1/swagger-ui/ | head -1
 ```
-[emerg] "location" directive is not allowed here
-```
 
-If there is no server block to attach it to, install
-`nginx/rust-customer-site.conf` into `sites-available/` instead; it is a
-server block that includes the snippet.
+Change `server_name` to your own hostname. Two constraints the config exists to
+respect:
 
-Then the API answers at `http://<host>:<port>/customer/`, with Swagger UI at
-`/customer/swagger-ui/`. Three rewrites keep everything inside the prefix, so
-no path outside `/customer/` is claimed:
+- **nginx must not listen on the app's port.** The container publishes 8088 on
+  the host, so a block with `listen 8088` never binds — `bind() to 0.0.0.0:8088
+  failed (98: Address already in use)` — and proxying to `127.0.0.1:8088` from
+  that same block would loop back into nginx rather than reach the app. nginx
+  takes port 80; the app keeps 8088.
+- **`X-Forwarded-Proto` is pinned to `https`**, not `$scheme`, because TLS
+  terminates at Cloudflare and nginx only ever sees plain HTTP on port 80.
+  `$scheme` would report `http` and the app would generate `http://` URLs. Use
+  `$scheme` instead if you put certificates on the host itself.
 
-- the `/swagger-ui` → `/swagger-ui/` redirect the app returns,
-- the absolute document URL Swagger UI hardcodes,
-- the `servers` entry in the OpenAPI document, which is `/` and would
-  otherwise send Swagger UI's **Try it out** calls to `/api/v1/customers`.
-
-Requires `ngx_http_sub_module` for the rewrites (Debian/Ubuntu: in
-`nginx-full`, not in `nginx-light`).
+Serving at the root of a dedicated hostname is what keeps the config short:
+Swagger UI's hardcoded `/api-docs/openapi.json` and the OpenAPI document's own
+`"servers": [{"url": "/"}]` both resolve against the right origin on their own.
+Mounting the API under a sub-path instead breaks both, and needs
+`ngx_http_sub_module` and a set of `sub_filter` rules to patch them back.
 
 ## Project layout
 
@@ -204,7 +205,7 @@ src/
 migrations/         # sqlx migrations, applied on start-up
 tests/              # integration tests against a real MySQL
 Dockerfile          # multi-stage build of the release image
-nginx/              # reverse proxy snippet for /customer/, plus a standalone site
+nginx/              # reverse proxy vhost for the API's own hostname
 .github/workflows/  # CI: format, clippy, tests, Docker Hub publish
 ```
 
