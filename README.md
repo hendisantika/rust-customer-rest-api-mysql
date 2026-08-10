@@ -109,19 +109,38 @@ src/
 ├── handlers.rs     # HTTP handlers and their OpenAPI annotations
 ├── openapi.rs      # OpenAPI 3 document
 ├── routes.rs       # router, middleware and Swagger UI mount
+├── lib.rs          # module tree and AppState
 ├── error.rs        # error type and its HTTP representation
 └── test_support.rs # in-memory repository used by the tests
 migrations/         # sqlx migrations, applied on start-up
+tests/              # integration tests against a real MySQL
 ```
 
 ## Tests
 
 ```bash
+cargo test                      # unit tests only, no database needed
+docker compose up -d            # then the integration tests too
 cargo test
 ```
 
-The handler tests drive the real router with an in-memory
+**Unit tests** (`src/handlers.rs`) drive the real router with an in-memory
 `CustomerRepository`, so they need no database and no running server. They
 cover the status codes and payloads of every endpoint, including validation
 failures, duplicate emails, missing customers and the generic 500 returned
 when the repository fails.
+
+**Integration tests** (`tests/customer_api.rs`) run the same router over a
+real MySQL connection and cover what an in-memory double cannot: the unique
+index behind the 409, LIKE wildcard escaping, the case-insensitive collation,
+utf8mb4 round trips, MySQL-generated timestamps and migration idempotence.
+
+They truncate the `customers` table, so they only run when
+`TEST_DATABASE_URL` points at a throw-away database and are skipped
+otherwise. `docker compose up -d` creates that database (`customer_db_test`)
+on first start, and `.env.example` already points at it.
+
+```bash
+TEST_DATABASE_URL=mysql://customer:secret@127.0.0.1:3306/customer_db_test \
+  cargo test --test customer_api
+```

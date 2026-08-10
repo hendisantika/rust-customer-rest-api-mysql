@@ -124,7 +124,7 @@ impl CustomerRepository for InMemoryCustomerRepository {
             })
             .cloned()
             .collect();
-        matching.sort_by(|a, b| b.id.cmp(&a.id));
+        matching.sort_by_key(|row| std::cmp::Reverse(row.id));
 
         let total = matching.len() as i64;
         let data = matching
