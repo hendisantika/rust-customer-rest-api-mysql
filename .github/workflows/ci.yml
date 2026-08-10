@@ -36,12 +36,12 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
   test:
-    name: Tests (MySQL 9.7.0)
+    name: Tests (MySQL 26.7.0)
     runs-on: ubuntu-latest
 
     services:
       mysql:
-        image: mysql:9.7.0
+        image: mysql:26.7.0
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: customer_db_test
