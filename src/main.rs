@@ -6,6 +6,8 @@ mod models;
 mod openapi;
 mod repository;
 mod routes;
+#[cfg(test)]
+mod test_support;
 
 use std::error::Error;
 use std::sync::Arc;
