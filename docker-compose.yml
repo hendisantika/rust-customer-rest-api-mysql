@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:26.7.0
-    container_name: rust-customer-mysql
+    container_name: customer-mysql-dev
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
