@@ -22,7 +22,7 @@ impl Config {
         let database_url =
             env::var("DATABASE_URL").map_err(|_| ConfigError::Missing("DATABASE_URL"))?;
 
-        let raw_addr = env::var("SERVER_ADDR").unwrap_or_else(|_| "0.0.0.0:8080".to_owned());
+        let raw_addr = env::var("SERVER_ADDR").unwrap_or_else(|_| "0.0.0.0:8088".to_owned());
         let server_addr = raw_addr.parse().map_err(|_| ConfigError::Invalid {
             name: "SERVER_ADDR",
             value: raw_addr,
